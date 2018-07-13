@@ -120,7 +120,7 @@ We used the forward-backward pipe operator `%<>%` to convert the
 `group` column into a factor. 
 
 ```{r ldagroups, fig.width = 7, fig.height = 5}
-diabetes.long = gather(diabetes, variable, value, -c(id,group))
+diabetes.long = gather(diabetes, variable, value, -c(id,group)) # gather 
 ggplot(diabetes.long, aes(x = value, col = group)) +
   geom_density() + facet_wrap( ~ variable, ncol = 2, scales = "free") 
 ```
@@ -311,6 +311,9 @@ table(zeller$disease)
 ```
 
 Explore the `eh` object to see what other datasets there are.
+```{r}
+eh
+```
 
 
 For the following, let's focus on the normal and cancer samples and set the 
@@ -382,7 +385,19 @@ confusion_table
 
 **Quiz questions 1 and 2**: What is the true positive rate (TPR) and true
 negative rate (SPC)? Hint: See book or [Wikipedia](https://en.wikipedia.org/wiki/Sensitivity_and_specificity).
+```{r}
+table(zeller$disease)
+```
 
+```{r}
+
+TPR<- 51/53
+
+SPC<- 61/61
+
+TPR
+SPC
+```
 
 Not bad. But remember that this is on the training data, without 
 cross-validation. Let's have a closer look at `glmfit`. The `glmnet` package
@@ -394,6 +409,8 @@ plot(glmfit, xvar = "norm", col = RColorBrewer::brewer.pal(12, "Set3"), lwd = sq
 
 What is the x-axis? What are the different lines? Check the ``plot.glmnet``
 documentation.
+
+A: A coeficient is produced for each class
 
 In particular, we note that as the penalty $\lambda$ increases, the L1 Norm 
 of the coefficients ($\sum |\beta_i|$) shrinks.
@@ -414,16 +431,39 @@ sum(abs(coef(glmfit, s=0.1)))
 
 **Quiz question 3**: Inspect the `glmfit` object: For how many different 
 values of $\lambda$ did `glmnet` fit the model using settings as above?
-
+```{r}
+glmfit
+```
+A: 100
 
 **Quiz question 4**: For each of the values of $\lambda$ in the object above, 
 calculate the L1 Norm (as we did above for two values of $\lambda$). 
 Which $\lambda$ most closely corresponds to a L1 norm 6000?
+```{r}
+
+for (l in glmfit$lambda){
+  #print(l)
+  print(sum(abs(coef(glmfit, s=l))))
+}
+
+```
+A: 0.00946895
 
 
 **Quiz question 5**: How many non-zero coefficients do you get for 
 the $\lambda$ that you found in the previous question?
+```{r}
+#result_c<- coef(glmfit, s=0.00946895)
 
+coefs = coef(glmfit)[, which.min(abs(glmfit$lambda - 0.00946895))]
+
+table(coefs)
+```
+```{r}
+1506-1349
+```
+
+A: 157
 
 To choose the best regularization parameter $\lambda$, we use cross-validation.
 
@@ -457,6 +497,12 @@ lambda.1se ? Report the top left element of the confusion table
 (i.e. number of correctly classified cancer samples). Hint: Use function
 `predict`.
 
+```{r}
+pred = predict(glmfit, newx = t(exprs(zellerNC)), type = "class", s = 0.09251259)
+confusion_table = table(predicted = pred, truth = zellerNC$disease)
+confusion_table
+```
+A: 37
 
 **Quiz question 7**: What features drive the classification (at the $\lambda$ 
 chosen by cross-validation)? Report the top one. Hint: The first line in the 
@@ -465,7 +511,11 @@ code below might be useful to get you started.
 
 ```{r zellercoef}
 coefs = coef(glmfit)[, which.min(abs(glmfit$lambda - s0))]
+head(sort(coefs, decreasing = F))
 ```
+A:  -57.0145554172607
+A: k__Bacteria|p__Candidatus_Saccharibacteria|c__Candidatus_Saccharibacteria_noname|o__Candidatus_Saccharibacteria_noname|f__Candidatus_Saccharibacteria_noname|g__Candidatus_Saccharibacteria_noname|s__candidate_division_TM7_single_cell_isolate_TM7b 
+
 
 # Method hacking
 
