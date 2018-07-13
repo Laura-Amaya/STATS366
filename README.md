@@ -1,2 +1,3 @@
-# STATS366
-First try statistics class
+# Hello World
+
+This is my first git repository.
